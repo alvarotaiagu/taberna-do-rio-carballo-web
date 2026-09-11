@@ -1,0 +1,15 @@
+{
+  "name": "A Taberna do Rio — Carballo",
+  "short_name": "Taberna do Rio",
+  "description": "Taberna tradicional junto al río Anllóns en Carballo. Bocadillos, cocido gallego y terraza.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F4EFE3",
+  "theme_color": "#1A4B40",
+  "lang": "es",
+  "icons": [
+    { "src": "assets/img/logo/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/img/logo/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
