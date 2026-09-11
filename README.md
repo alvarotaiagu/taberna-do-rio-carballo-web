@@ -173,3 +173,5 @@ la web:**
   JS) — degrada mejor en este aspecto que un sitio con fotos con blur-up.
 - Menú móvil, filtro de la carta y aviso de cookies probados por interacción
   real (clic), no solo visualmente.
+#   T a b e r n a - D o - R i o  
+ 
