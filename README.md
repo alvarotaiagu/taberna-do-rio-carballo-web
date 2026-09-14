@@ -1,10 +1,51 @@
 # A Taberna do Rio — landing
 
-Sitio estático (HTML/CSS/JS, sin build), mismo patrón técnico que
-[melao-carballo-web](https://github.com/alvarotaiagu/melao-carballo-web). Abrir
-`index.html` con un servidor estático cualquiera (por ejemplo
-`python -m http.server`) — no funciona bien con `file://` porque las fuentes y
-el `<script>` de `js/main.js` necesitan HTTP.
+Sitio estático (HTML/CSS/JS, sin build), mismo *toolkit* técnico que
+[melao-carballo-web](https://github.com/alvarotaiagu/melao-carballo-web)
+(GSAP+ScrollTrigger, Lenis, Flip) pero con su **propia estructura de página**
+— ver "Rediseño estructural (2026-09-12)" más abajo. Abrir `index.html` con
+un servidor estático cualquiera (por ejemplo `python -m http.server`) — no
+funciona bien con `file://` porque las fuentes y el `<script>` de
+`js/main.js` necesitan HTTP.
+
+## Rediseño estructural (2026-09-12)
+
+La primera entrega (sesión nocturna sin supervisión, ver más abajo) seguía
+casi al pie de la letra el esqueleto de secciones de Melao — mismo orden,
+mismo nav superior, mismo grid de tarjetas para la carta y las reseñas. Como
+este workspace usa cada web como plantilla reutilizable para futuros
+clientes, eso corría el riesgo de leerse como "la misma plantilla" al
+comparar varios sitios. Esta revisión mantiene el toolkit de motion (GSAP,
+Lenis, reveals por sección, magnetic buttons, tilt) pero convierte a Taberna
+do Rio en una **tercera familia estructural**, distinta de Melao y de
+Marabú:
+
+- **Nav lateral de puntos** (`.rail-nav`) en vez de la barra superior con
+  subrayado — hace también de indicador de progreso de scroll.
+- **Hero con iconos orbitando** (`js/scene-icons.js`): copa de albariño,
+  pote de cocido, guitarra y ficha de dominó, en canvas 2D (sin WebGL),
+  sobre el póster SVG de la terraza — variante propia de la técnica
+  "orbiting icons" ya explorada para Melao, con acabado sólido+sombra en
+  vez del gooey. Pausado fuera de viewport/pestaña oculta, cae a solo el
+  póster estático sin motion/sin canvas.
+- **"Reloj de la taberna"**: línea de tiempo de 8h a 24h con las franjas de
+  barra y cocina de hoy y una marca en vivo de "ahora", en vez de una lista
+  plana de horario.
+- **Carta en hoja impresa** (`.carta-sheet`): sin tarjetas ni fotos, con
+  líneas de puntos plato…precio, en vez del grid de tarjetas de Melao.
+- **"Ambiente"**: fusiona lo que antes eran dos secciones (`#eventos` +
+  `#mosaico`) en una sola tira de scroll horizontal (`.filmstrip`) con
+  botones prev/next accesibles, en vez de un grid con lightbox.
+- **Reseñas**: anillo de valoración (conic-gradient) + chips de temas, en
+  vez de la fila de 3 tarjetas que se repetía también en "La taberna" y en
+  "Eventos" de la versión anterior.
+- Cursor personalizado añadido (`initCustomCursor` en `js/main.js`), gateado
+  igual que el resto del motion fino: solo con `(pointer: fine)` y
+  `prefers-reduced-motion: no-preference`.
+
+Validado con Playwright (Chromium local) en desktop/mobile, con
+`reducedMotion: 'reduce'` y con `javaScriptEnabled: false`: sin errores de
+consola ni requests fallidas en ningún caso.
 
 ## Dirección de arte
 
@@ -32,9 +73,10 @@ el `<script>` de `js/main.js` necesitan HTTP.
   red del entorno de ejecución). En vez de dejar huecos vacíos o usar fotos
   genéricas de baja calidad, se optó por **ilustraciones propias en SVG**
   (inline en `index.html`, sin peso de imagen añadido — cero KB de fotos,
-  carga instantánea) para la hero y la sección "Ambiente y especialidades"
-  (`#mosaico`): terraza con mesa y sombrilla, plato de cocido, bocadillo de
-  chapata, tortilla, pulpo á feira, guitarra/música en directo, dados/dominó.
+  carga instantánea) para el póster del hero y la sección "Ambiente y
+  especialidades" (`#ambiente`, ver rediseño 2026-09-12): terraza con mesa y
+  sombrilla, plato de cocido, bocadillo de chapata, tortilla, pulpo á feira,
+  guitarra/música en directo, dados/dominó.
   **Antes de enseñar la web al dueño, sustituir estas ilustraciones por fotos
   reales del local** (plato real, terraza real, gente real) — es el ajuste
   pendiente más importante de esta entrega. La sección lleva un aviso visible
@@ -42,10 +84,10 @@ el `<script>` de `js/main.js` necesitan HTTP.
   para que quede claro que es un placeholder de diseño, no un descuido.
 - **Motion:** mismo stack que Melao — GSAP + ScrollTrigger para las
   revelaciones por sección, Flip para el filtro de la carta, Lenis como motor
-  de scroll suave. **Sin** el shader WebGL ni el cursor personalizado de
-  Melao (se omitieron para acotar el alcance de esta sesión nocturna); el
-  resultado es igual de fluido, solo sin esos dos extras decorativos. Todo el
-  motion es opcional: si el CDN de GSAP falla (probado expresamente
+  de scroll suave, cursor personalizado. En vez del shader WebGL de Melao, el
+  hero usa un canvas 2D propio de iconos orbitando (ver rediseño 2026-09-12)
+  — misma familia de técnica, sin WebGL. Todo el motion es opcional: si el
+  CDN de GSAP falla (probado expresamente
   desactivando la red), el sitio se degrada con limpieza — nav, filtros,
   horario en vivo, mapa y WhatsApp siguen funcionando sin un solo error de
   consola (ver "Validación hecha" más abajo). **Corrección sobre la
@@ -75,7 +117,7 @@ Pensados para impresionar al dueño más allá del rediseño básico:
   (primero/segundo/postre+bebida, 12,50 €) con una nota explícita de que es
   una plantilla que se personaliza en un minuto — pensado como argumento de
   venta ("esto lo editas tú mismo cada semana").
-- **Sección de eventos** (`#eventos`): pone en valor "actuaciones en directo"
+- **Sección de eventos** (dentro de `#ambiente` desde el rediseño 2026-09-12): pone en valor "actuaciones en directo"
   y "juegos de mesa" (datos verificados de la ficha de Google Maps) con CTA a
   WhatsApp para reservar terraza o preguntar por la próxima actuación — sin
   inventar fechas ni artistas concretos.
@@ -123,18 +165,18 @@ la web:**
   las especialidades reales mencionadas en reseñas — no son precios
   confirmados por el negocio. Hay un aviso visible en la sección ("precios
   orientativos, a confirmar y ajustar con la carta física").
-- **Reseñas**: se intentó extraer citas textuales reales de TripAdvisor y de
-  búsqueda web, pero el acceso de red de esta sesión no permitió leer el
-  contenido completo de reseñas recientes (solo devolvió una reseña antigua,
-  mixta, sin fecha — descartada por indicar el propio encargo que la
-  información de TripAdvisor puede estar desactualizada). Para no inventar
-  testimonios con nombres falsos, la sección "Reseñas" usa **solo la cifra
-  real verificada** (4,3★/158 reseñas, enlazada a la ficha de Google) más
-  tres tarjetas temáticas (bocadillos, cocido, terraza) basadas en lo que
-  describen las fuentes consultadas — sin atribuir frases a personas
-  concretas. Si Álvaro consigue capturas de reseñas reales del propietario
-  (como se hizo con Melao), lo ideal es sustituir esas tarjetas por 2–3 citas
-  textuales reales, siguiendo el patrón de `#resenas` en Melao.
+- **Reseñas (actualizado 2026-09-14):** Álvaro facilitó capturas de la ficha
+  de Google del negocio con tres reseñas reales de 5★. Se añadieron como
+  citas textuales en `#resenas` (`.resenas-quotes` en `index.html`/
+  `style.css`), debajo del panel de valoración agregada — **atribuidas solo
+  con nombre + inicial del apellido** (p. ej. "Jose Luis N.", nunca el
+  nombre y apellido completos de la captura), siguiendo el mismo criterio de
+  privacidad que Melao. No se ha tocado el texto de las reseñas salvo
+  limpieza tipográfica menor (comillas, espaciado); ver commit
+  correspondiente para el texto exacto de las capturas.
+  - Nota de investigación (histórica): en la sesión inicial se intentó
+    extraer citas de TripAdvisor y búsqueda web sin éxito por falta de
+    acceso de red — ya resuelto con las capturas reales de Álvaro.
   - Nota de investigación: la ficha de TripAdvisor de este negocio aparece
     "sin reclamar", con muy pocas reseñas propias (una encontrada, de fecha
     no disponible, con valoración mixta) — la fuente fiable y actual sigue

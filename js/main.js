@@ -36,44 +36,37 @@ splitTargets.forEach((el) => splitMap.set(el, splitWords(el)));
 /* ---------- Google rating (única fuente de la cifra — edítala aquí
    cuando cambie, en vez de buscarla por todo index.html). Verificada en
    Google Maps: 4,3 sobre 5, 158 reseñas (11-09-2026). ---------- */
-const GOOGLE_RATING = { value: "4,3", count: "158" };
+const GOOGLE_RATING = { value: "4,3", count: "158", outOf5: 4.3 };
 
 function initGoogleRating() {
-  const { value, count } = GOOGLE_RATING;
+  const { value, count, outOf5 } = GOOGLE_RATING;
   const seal = document.querySelector(".google-seal");
   const sealCount = document.querySelector(".google-seal-count");
   const ctaCount = document.querySelector(".resenas-cta-count");
-  const scoreEl = document.querySelector(".resenas-score strong");
-  const scoreCount = document.querySelector(".resenas-score span");
+  const ring = document.querySelector(".resenas-ring");
+  const ringValue = document.querySelector(".resenas-ring-value strong");
+  const countText = document.querySelector(".resenas-count");
   if (seal) seal.setAttribute("aria-label", `${value} sobre 5 en Google — ver ficha de Google (se abre en una pestaña nueva)`);
   if (sealCount) sealCount.textContent = "en Google";
   if (ctaCount) ctaCount.textContent = `Ver reseñas en Google (${value}★)`;
-  if (scoreEl) scoreEl.textContent = value;
-  if (scoreCount) scoreCount.textContent = `/ 5 · ${count} reseñas en Google`;
+  if (ring) ring.style.setProperty("--pct", (outOf5 / 5) * 100 + "%");
+  if (ringValue) ringValue.textContent = value;
+  if (countText) countText.textContent = `${count} reseñas en Google. Lo que más se repite:`;
 }
 initGoogleRating();
 
-/* ---------- Hero art rotator: cross-fades entre dos escenas ilustradas
-   propias (terraza junto al río / mesa con cocido y albariño). Off bajo
-   prefers-reduced-motion, donde la primera escena se queda fija. ---------- */
-function initHeroRotator() {
-  const card = document.querySelector("[data-hero-rotator]");
-  if (!card) return;
-  const scenes = card.querySelectorAll(".hero-art");
-  const tagEl = card.querySelector("[data-hero-tag]");
-  if (scenes.length < 2) return;
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
-  const tags = ["Terraza junto al Anllóns", "Cocido y albariño en la mesa", "Barra de toda la vida"];
-  let index = 0;
-  setInterval(() => {
-    scenes[index].classList.remove("is-active");
-    index = (index + 1) % scenes.length;
-    scenes[index].classList.add("is-active");
-    if (tagEl) tagEl.textContent = tags[index % tags.length];
-  }, 5200);
+/* ---------- Hero: escena de iconos orbitando (copa, pote, guitarra, ficha)
+   sobre el póster SVG estático de la terraza. Solo se activa con motion
+   permitido y si el canvas 2D existe; si no, el póster se queda como
+   escena completa (ver js/scene-icons.js). ---------- */
+let heroScene = null;
+function initHeroScene() {
+  const card = document.querySelector("[data-hero-scene]");
+  const canvas = card && card.querySelector(".hero-scene-canvas");
+  if (!card || !canvas || typeof window.createIconOrbitScene !== "function") return;
+  heroScene = window.createIconOrbitScene(canvas);
+  if (heroScene) card.classList.add("is-animated");
 }
-initHeroRotator();
 
 /* ---------- Cookie notice ---------- */
 function initCookieBanner() {
@@ -142,10 +135,10 @@ initMapConsent();
 /* ---------- Carta filters ---------- */
 function initCartaFilters() {
   const group = document.querySelector(".carta-filters");
-  const cards = Array.from(document.querySelectorAll(".carta-card"));
+  const cards = Array.from(document.querySelectorAll(".carta-block"));
   if (!group || !cards.length) return;
   const pills = Array.from(group.querySelectorAll(".carta-filter"));
-  const grid = document.querySelector(".carta-grid");
+  const grid = document.querySelector(".carta-sheet");
 
   function applyFilter(filter, animate) {
     if (!gsapReady) {
@@ -268,18 +261,52 @@ function isOpenAt(hoursMap, date) {
   });
 }
 
+/* ---------- Reloj de la taberna: línea de tiempo 8h–24h con las franjas
+   de barra/cocina de hoy y una marca en vivo de "ahora". Eje fijo de 960
+   minutos (08:00–24:00, rango real de apertura) para que las franjas y la
+   marca de "ahora" se posicionen en % sin depender del layout. ---------- */
+const CLOCK_AXIS_START = 8 * 60;
+const CLOCK_AXIS_END = 24 * 60;
+const CLOCK_AXIS_RANGE = CLOCK_AXIS_END - CLOCK_AXIS_START;
+
+function clockPct(minutes) {
+  return Math.min(100, Math.max(0, ((minutes - CLOCK_AXIS_START) / CLOCK_AXIS_RANGE) * 100));
+}
+
+function renderClockTrack(track, hoursMap, day) {
+  if (!track) return;
+  const nowMark = track.querySelector(".clock-now");
+  track.querySelectorAll(".clock-window").forEach((el) => el.remove());
+  (hoursMap[day] || []).forEach(([open, close]) => {
+    const span = document.createElement("span");
+    span.className = "clock-window";
+    const left = clockPct(toMinutes(open));
+    const right = clockPct(toMinutes(close));
+    span.style.left = left + "%";
+    span.style.width = Math.max(0, right - left) + "%";
+    track.appendChild(span);
+  });
+  if (nowMark) track.appendChild(nowMark);
+}
+
 function initOpeningHours() {
   const barStatus = document.getElementById("bar-status-text");
   const kitchenStatus = document.getElementById("kitchen-status-text");
   const barDot = document.querySelector('[data-status-dot="bar"]');
   const kitchenDot = document.querySelector('[data-status-dot="kitchen"]');
   const list = document.getElementById("hours-list");
+  const barTrack = document.querySelector('[data-clock-track="bar"]');
+  const kitchenTrack = document.querySelector('[data-clock-track="kitchen"]');
+  const nowMarks = document.querySelectorAll("[data-clock-now]");
   if (!barStatus || !list) return;
+
+  let lastDay = null;
 
   function update() {
     const now = new Date();
+    const day = now.getDay();
     list.querySelectorAll("li").forEach((li) => {
-      li.classList.toggle("is-today", Number(li.dataset.day) === now.getDay());
+      li.classList.toggle("is-today", Number(li.dataset.day) === day);
     });
     const barOpen = isOpenAt(BAR_HOURS, now);
     barStatus.textContent = barOpen ? "Barra abierta ahora" : "Barra cerrada ahora";
@@ -289,6 +316,17 @@ function initOpeningHours() {
       const kitchenOpen = isOpenAt(KITCHEN_HOURS, now);
       kitchenStatus.textContent = kitchenOpen ? "Cocina sirviendo ahora" : "Cocina cerrada (solo barra)";
       if (kitchenDot) kitchenDot.classList.toggle("is-closed", !kitchenOpen);
+    }
+
+    if (day !== lastDay) {
+      renderClockTrack(barTrack, BAR_HOURS, day);
+      renderClockTrack(kitchenTrack, KITCHEN_HOURS, day);
+      lastDay = day;
+    }
+    if (nowMarks.length) {
+      const minutes = now.getHours() * 60 + now.getMinutes();
+      const pct = clockPct(minutes) + "%";
+      nowMarks.forEach((mark) => (mark.style.left = pct));
     }
   }
   update();
@@ -364,61 +402,29 @@ document.querySelectorAll("[data-scroll-target]").forEach((btn) => {
   btn.addEventListener("click", () => smoothScrollToSelector(btn.dataset.scrollTarget));
 });
 
-/* ---------- Sliding nav underline ---------- */
-function placeNavUnderline(link, animate = true) {
-  if (!gsapReady) return;
-  const nav = document.querySelector(".site-nav");
-  const underline = nav && nav.querySelector(".nav-underline");
-  if (!nav || !underline) return;
-  if (!link) {
-    gsap.to(underline, { width: 0, duration: animate ? 0.25 : 0, ease: "power2.out" });
-    return;
-  }
-  const navRect = nav.getBoundingClientRect();
-  const linkRect = link.getBoundingClientRect();
-  const vars = { x: linkRect.left - navRect.left, width: linkRect.width };
-  if (animate) {
-    gsap.to(underline, { ...vars, duration: 0.35, ease: "power3.out" });
-  } else {
-    gsap.set(underline, vars);
-  }
-}
-
-function initNavUnderline() {
-  const nav = document.querySelector(".site-nav");
-  if (!nav) return;
-  const links = Array.from(nav.querySelectorAll("a"));
-  links.forEach((link) => {
-    link.addEventListener("mouseenter", () => placeNavUnderline(link, !reduceQuery.matches));
-    link.addEventListener("focus", () => placeNavUnderline(link, !reduceQuery.matches));
+/* ---------- Rail nav: activa el punto de la sección visible y sube el
+   relleno de la guía como si fuera el nivel del río ---------- */
+function setRailActive(id) {
+  document.querySelectorAll(".rail-links a").forEach((a) => {
+    a.classList.toggle("is-active", a.getAttribute("href") === "#" + id);
   });
-  nav.addEventListener("mouseleave", () => placeNavUnderline(nav.querySelector("a.is-active"), !reduceQuery.matches));
-  nav.addEventListener("focusout", (e) => {
-    if (nav.contains(e.relatedTarget)) return;
-    placeNavUnderline(nav.querySelector("a.is-active"), !reduceQuery.matches);
+  document.querySelectorAll('.mobile-nav a[href^="#"], .footer-nav a[href^="#"]').forEach((a) => {
+    a.classList.toggle("is-active", a.getAttribute("href") === "#" + id);
   });
-  window.addEventListener("resize", () => placeNavUnderline(nav.querySelector("a.is-active"), false));
 }
-initNavUnderline();
 
 /* ---------- Nav scroll-spy ---------- */
 function initScrollSpy() {
   if (!gsapReady) return;
-  const navLinks = document.querySelectorAll('.site-nav a[href^="#"], .mobile-nav a[href^="#"], .footer-nav a[href^="#"]');
-  if (!navLinks.length) return;
-  function setActive(id) {
-    navLinks.forEach((a) => a.classList.toggle("is-active", a.getAttribute("href") === "#" + id));
-    placeNavUnderline(document.querySelector(`.site-nav a[href="#${id}"]`), !reduceQuery.matches);
-  }
-  ["taberna", "carta", "eventos", "mosaico", "encuentranos"].forEach((id) => {
+  ["taberna", "carta", "ambiente", "resenas", "encuentranos"].forEach((id) => {
     const el = document.getElementById(id);
     if (!el) return;
     ScrollTrigger.create({
       trigger: el,
       start: "top center",
       end: "bottom center",
-      onEnter: () => setActive(id),
-      onEnterBack: () => setActive(id),
+      onEnter: () => setRailActive(id),
+      onEnterBack: () => setRailActive(id),
     });
   });
 }
@@ -428,13 +434,15 @@ function initScrollChrome() {
   if (!gsapReady) return;
   const bar = document.querySelector(".scroll-progress-bar");
   const header = document.querySelector(".site-header");
-  if (bar) {
+  const railFill = document.querySelector(".rail-track-fill");
+  if (bar || railFill) {
     ScrollTrigger.create({
       trigger: document.documentElement,
       start: "top top",
       end: "bottom bottom",
       onUpdate: (self) => {
-        bar.style.transform = `scaleX(${self.progress})`;
+        if (bar) bar.style.transform = `scaleX(${self.progress})`;
+        if (railFill) railFill.style.height = self.progress * 100 + "%";
       },
     });
   }
@@ -488,17 +496,20 @@ if (mm) mm.add(
       runMarquee();
       initScrollSpy();
       initScrollChrome();
+      initHeroScene();
 
       if (isFinePointer) {
         initMagneticButtons();
         initTiltCards();
         initHeroTilt();
         initSpotlight();
+        initCustomCursor();
       }
 
       window.addEventListener("pagehide", () => {
         lenis && lenis.destroy();
         ScrollTrigger.getAll().forEach((t) => t.kill());
+        if (heroScene) heroScene.destroy();
       });
     } else {
       document.body.classList.add("motion-reduced");
@@ -538,11 +549,11 @@ function runSectionReveals() {
     const headingWords = headingSplitTargets.length
       ? headingSplitTargets.flatMap((el) => splitMap.get(el) || [])
       : null;
-    const blocks = group.querySelectorAll("p, .eventos-cta, .resenas-top");
+    const blocks = group.querySelectorAll("p, .ambiente-cta, .resenas-panel");
     const cards = group.querySelectorAll(
-      ".rasgo-card, .carta-card, .mosaico-item, .evento-card, .tema-card, .hours-card, .info-list li, .map-card, .menudia-card"
+      ".rasgo-row, .carta-block, .film-panel, .clock-card, .info-list li, .map-card, .menudia-card, .resena-card"
     );
-    const rows = group.querySelectorAll(".carta-card .carta-items li, .hours-list li, .menudia-course li");
+    const rows = group.querySelectorAll(".carta-block .carta-items li, .hours-list li, .menudia-course li");
 
     if (headingWords) gsap.set(headingWords, { yPercent: 110, opacity: 0 });
     gsap.set(blocks, { y: 16, opacity: 0 });
@@ -642,7 +653,7 @@ function initMagneticButtons() {
 
 /* ---------- Tilt on carta/rasgo/tema/evento cards ---------- */
 function initTiltCards() {
-  document.querySelectorAll(".carta-card, .rasgo-card, .tema-card, .evento-card").forEach((el) => {
+  document.querySelectorAll(".carta-block, .rasgo-row, .film-panel").forEach((el) => {
     const rotX = gsap.quickTo(el, "rotationX", { duration: 0.4, ease: "power2" });
     const rotY = gsap.quickTo(el, "rotationY", { duration: 0.4, ease: "power2" });
     el.addEventListener("mousemove", (e) => {
@@ -680,6 +691,70 @@ function initHeroTilt() {
     rotY(0);
   });
 }
+
+/* ---------- Cursor personalizado (solo puntero fino) ----------
+   Anillo + punto central, ambos con mix-blend-mode: difference (ver CSS)
+   para que se vean sobre cualquier fondo, claro u oscuro, sin necesidad de
+   detectar la sección por JS. */
+function initCustomCursor() {
+  const ring = document.querySelector(".cursor-ring");
+  const dot = document.querySelector(".cursor-dot");
+  if (!ring || !dot) return;
+  document.body.classList.add("custom-cursor-active");
+
+  const moveRingX = gsap.quickTo(ring, "x", { duration: 0.35, ease: "power3" });
+  const moveRingY = gsap.quickTo(ring, "y", { duration: 0.35, ease: "power3" });
+  const moveDotX = gsap.quickTo(dot, "x", { duration: 0.12, ease: "power3" });
+  const moveDotY = gsap.quickTo(dot, "y", { duration: 0.12, ease: "power3" });
+
+  function onMove(e) {
+    ring.classList.add("is-visible");
+    dot.classList.add("is-visible");
+    moveRingX(e.clientX);
+    moveRingY(e.clientY);
+    moveDotX(e.clientX);
+    moveDotY(e.clientY);
+  }
+  window.addEventListener("pointermove", onMove, { passive: true });
+
+  document.querySelectorAll("a, button, [tabindex], .film-panel, .rasgo-row").forEach((el) => {
+    el.addEventListener("mouseenter", () => {
+      ring.classList.add("is-hover");
+      dot.classList.add("is-hover");
+    });
+    el.addEventListener("mouseleave", () => {
+      ring.classList.remove("is-hover");
+      dot.classList.remove("is-hover");
+    });
+  });
+
+  window.addEventListener("blur", () => {
+    ring.classList.remove("is-visible");
+    dot.classList.remove("is-visible");
+  });
+  document.addEventListener("mouseleave", () => {
+    ring.classList.remove("is-visible");
+    dot.classList.remove("is-visible");
+  });
+}
+
+/* ---------- Filmstrip de "Ambiente": botones prev/next accesibles sobre
+   el scroll-snap horizontal nativo (funciona igual sin JS, solo sin
+   botones: el scroll táctil/trackpad sigue disponible). ---------- */
+function initFilmstripNav() {
+  const strip = document.querySelector("[data-filmstrip]");
+  const prev = document.querySelector(".filmstrip-prev");
+  const next = document.querySelector(".filmstrip-next");
+  if (!strip || (!prev && !next)) return;
+  function step(dir) {
+    const panel = strip.querySelector(".film-panel");
+    const amount = panel ? panel.getBoundingClientRect().width + 20 : strip.clientWidth * 0.8;
+    strip.scrollBy({ left: dir * amount, behavior: reduceQuery.matches ? "auto" : "smooth" });
+  }
+  if (prev) prev.addEventListener("click", () => step(-1));
+  if (next) next.addEventListener("click", () => step(1));
+}
+initFilmstripNav();
 
 /* Refresh ScrollTrigger measurements once fonts + layout settle — guarded
    by gsapReady since GSAP/ScrollTrigger may not have loaded (CDN down,

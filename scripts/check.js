@@ -24,9 +24,9 @@ const { chromium } = require('playwright');
     await page.waitForTimeout(600);
     await page.screenshot({ path: `/tmp/shot-${label}-carta.png` });
 
-    await page.evaluate(() => document.querySelector('#mosaico').scrollIntoView());
+    await page.evaluate(() => document.querySelector('#ambiente').scrollIntoView());
     await page.waitForTimeout(600);
-    await page.screenshot({ path: `/tmp/shot-${label}-mosaico.png` });
+    await page.screenshot({ path: `/tmp/shot-${label}-ambiente.png` });
 
     await page.evaluate(() => document.querySelector('#encuentranos').scrollIntoView());
     await page.waitForTimeout(600);
