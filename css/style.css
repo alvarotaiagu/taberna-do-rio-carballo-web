@@ -730,9 +730,11 @@ h2 {
 }
 .carta-filter:active { transform: scale(0.96); }
 
-/* Hoja de carta impresa: sin tarjetas ni fotos, columnas con divisores y
-   líneas de puntos plato…precio — deliberadamente distinto del grid de
-   tarjetas fotográficas de Melao. */
+/* Hoja de carta impresa: sin tarjetas ni fotos, columnas con divisores —
+   deliberadamente distinto del grid de tarjetas fotográficas de Melao.
+   Sin precios: no hay carta física ni precios por plato verificados, así
+   que no se inventan cifras (ver carta-lead); la línea de puntos solo se
+   usa en "Tortilla" para su nota de tamaños. */
 .carta-sheet {
   margin-top: 2.5rem;
   display: grid;
@@ -776,7 +778,7 @@ h2 {
   transform: translateY(-0.3em);
   margin: 0 0.15rem;
 }
-.carta-items .price { color: var(--wood-deep); font-weight: 700; white-space: nowrap; }
+.carta-items .note { color: var(--wood-deep); font-weight: 600; font-size: 0.85rem; white-space: nowrap; }
 
 @media (max-width: 760px) {
   .carta-sheet { grid-template-columns: 1fr; }

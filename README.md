@@ -152,19 +152,38 @@ TripAdvisor):
   de chapata, cocido tradicional gallego, tortilla española, tapas/raciones,
   calamares y pulpo — reflejadas en "La carta" y en las tarjetas temáticas de
   "Reseñas".
+- **Carta de "Raciones" y "Postres" (actualizado 2026-09-14):** Álvaro pasó
+  capturas del widget de menú de la ficha de Google del negocio. Se
+  sustituyeron los platos inventados de esas dos categorías por la lista
+  real (Chipirones a la plancha, Zorza, Raxo, Ensaladilla, Solomillo de
+  cerdo, Tabla de ibéricos, Croquetas de jamón, Tortilla —con nota de
+  tamaños Pequeña/mediana/grande, tal y como la muestra Google— y en
+  Postres: Tiramisú, Helado). Google no da precios, así que **se quitaron
+  los precios de toda la sección "La carta"** (no solo de Raciones/Postres,
+  por consistencia — ver punto siguiente) en vez de dejar unos inventados
+  junto a platos reales sin precio.
 
 **⚠️ Pendiente / decisiones tomadas por mi cuenta — revisar antes de enseñar
 la web:**
 - **Fotos reales del local** (ver "Fotografía" arriba) — es lo primero que
   hay que cambiar. Las ilustraciones SVG son un recurso de diseño digno,
-  pero no sustituyen a fotos reales de cara al dueño.
+  pero no sustituyen a fotos reales de cara al dueño. Álvaro dio permiso
+  para usar fotos de stock (Unsplash u otras) si hiciera falta alguna para
+  un plato o sección — no se ha usado ninguna todavía porque "La carta" es
+  deliberadamente una hoja sin fotos (ver rediseño 2026-09-12); el sitio más
+  indicado para una foto de stock, si se quiere, sería "Ambiente" (que hoy
+  usa ilustraciones SVG) — pendiente de decidir con Álvaro.
 - **Precios de la carta**: no existe carta física ni fotografiada disponible
   (a diferencia de Melao, donde el dueño facilitó fotos de su carta real).
-  Los precios y platos de "La carta" y del "Menú del día" son **estimaciones
-  orientativas** dentro del rango de precio verificado (10–20 €/persona) y de
-  las especialidades reales mencionadas en reseñas — no son precios
-  confirmados por el negocio. Hay un aviso visible en la sección ("precios
-  orientativos, a confirmar y ajustar con la carta física").
+  Bocadillos, "De cuchara y tradicional" y Bebidas siguen siendo una
+  selección de platos plausible basada en reseñas/costumbre de bar gallego,
+  **sin confirmar por el negocio** (a diferencia de Raciones/Postres, que sí
+  son la lista real de Google) — pendiente confirmar con el dueño o
+  sustituir por su carta física. Ya no se muestra ningún precio por plato en
+  ninguna categoría (antes eran estimaciones orientativas; se quitaron para
+  no mezclar cifras inventadas con la lista real de Raciones/Postres). El
+  precio medio real (10–20 €/persona, verificado en Google) sí se sigue
+  mostrando en el texto de la sección y en el JSON-LD.
 - **Reseñas (actualizado 2026-09-14):** Álvaro facilitó capturas de la ficha
   de Google del negocio con tres reseñas reales de 5★. Se añadieron como
   citas textuales en `#resenas` (`.resenas-quotes` en `index.html`/
